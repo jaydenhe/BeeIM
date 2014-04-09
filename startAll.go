@@ -5,8 +5,8 @@ import (
 )
 
 func main(){
-	log.Panicln("hello startAll")
-)
+	log.Println("hello startAll")
+}
 
 
 
