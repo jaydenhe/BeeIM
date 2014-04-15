@@ -6,7 +6,7 @@ import (
 )
 
 
-func StartAgent(in chan []byte,conn net.Conn){
+func StartAgent(in chan Frame,conn net.Conn){
 	log.Println("hello agent")
 }
 

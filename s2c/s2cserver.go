@@ -1,13 +1,11 @@
-package main
+package s2c
 
 import (
-	"encoding/binary"
-	"io"
 	"log"
 	"net"
 )
 
-func main() {
+func Run() {
 	log.Println("Starting the server")
 	//listen
 	service := ":1114"
@@ -39,32 +37,17 @@ func main() {
 func handleClient(conn net.Conn) {
 	defer conn.Close()
 
-	header := make([]byte, 2)
-	ch := make(chan []byte, 10)
+	ch := make(chan Frame,2)
 
 	go StartAgent(ch, conn)
 
 	for {
-		n, err := io.ReadFull(conn, header)
-
-		if n == 0 && err == io.EOF {
-			break
-		} else if err != nil {
-			log.Println("error receiving header:", err)
-			break
-		}
-
-		//read data
-		size := binary.BigEndian.Uint16(header)
-		data := make([]byte, size)
-
-		n, err := io.ReadFull(conn.data)
+		frame,err:=ReadAFrame(conn)
 
 		if err != nil {
-			log.Println("error receiving msg :", err)
 			break
 		}
-		ch <- data
+		ch <- *frame
 	}
 	close(ch)
 }
@@ -74,3 +57,14 @@ func checkError(err error) {
 		log.Fatalf("Fatal error:%v", err)
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
