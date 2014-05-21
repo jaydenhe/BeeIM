@@ -1,17 +1,17 @@
 package uniq
 
 var (
-	num = make(chan int)
+	num = make(chan uint64)
 )
 
 func init() {
 	go func() {
-		for i := 0; ; i++ {
+		for i := uint64(0); ; i++ {
 			num <- i
 		}
 	}()
 }
 
-func GetUniq() int {
+func GetUniq() uint64 {
 	return <-num
 }

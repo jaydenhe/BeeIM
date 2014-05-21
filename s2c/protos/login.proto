@@ -1,14 +1,14 @@
 package protocol;
 
-message LoginReq{
-	required string MessageFrom = 1;
-	required string MessageTo = 2;
-	optional string CryptoKey = 3;
-	optional string UserPass = 4;
+message LoginReq {
+    required string MessageFrom = 1;
+    required string MessageTo = 2;
+    optional string CryptoKey = 3;
+    optional string UserPass = 4;
 }
 
-message LoginAck{
-	required string MessageFrom = 1;
-	required string MessageTo = 2;
-	optional string Result = 3;
+message LoginAck {
+    required string MessageFrom = 1;
+    required string MessageTo = 2;
+    optional string Result = 3;
 }
