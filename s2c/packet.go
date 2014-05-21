@@ -9,25 +9,24 @@ type Packet struct{
 	packetData []byte
 }
 
-
-func NewPacket()(packet *Packet){
-	packet = &Packet{0,nil}
+func NewPacket() (packet *Packet) {
+	packet = &Packet{0, nil}
 	return packet
 }
 
-func (self *Packet)SetType(t uint32){
+func (self *Packet) SetType(t uint32) {
 	self.packetType = t
 }
 
-func (self *Packet)GetType()(t uint32){
+func (self *Packet) GetType() (t uint32) {
 	return self.packetType
 }
 
-func (self *Packet)SetData(data []byte){
+func (self *Packet) SetData(data []byte) {
 	self.packetData = data
 }
 
-func (self *Packet)GetData()(data []byte){
+func (self *Packet) GetData() (data []byte) {
 	return self.packetData
 }
 

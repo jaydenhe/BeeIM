@@ -7,7 +7,6 @@ package s2c
 import (
 	"io"
 	"bufio"
-	"bytes"
 	"encoding/binary"
 	"errors"
 )
@@ -23,16 +22,16 @@ packet struct
 
 const (
 	defaultPacketBufSize = 2048
-	maxPacketLength = 0xEFFFFFFF
+	maxPacketLength      = 0xEFFFFFFF
 )
 
 var (
-	ErrInvalidPacketHat = errors.New("pakcetio:Invalid PacketHat")
+	ErrInvalidPacketHat    = errors.New("pakcetio:Invalid PacketHat")
 	ErrInvalidPacketLength = errors.New("packetio:invalid Packet length")
 )
 
 var (
-	PacketHat = []byte{0xDE,0xAD,0xBE,0xEF}
+	PacketHat = []byte{byte(0xDE), byte(0xAD), byte(0xBE), byte(0xEF)}
 )
 
 // Reader implements buffering for an io.Reader object.
@@ -47,45 +46,39 @@ func NewPacketReader(rd io.Reader) *PacketReader {
 	return r
 }
 
-
 //check packet hat
-func (r *PacketReader) checkPacketHat() (bool,error) {
-
-	buf := make([]byte,4)
+func (r *PacketReader) checkPacketHat() (bool, error) {
 
 	//read 4 bytes from bufio.reader
-	hasRead  := int(0)
-	for {
-		n, err := r.br.Read(buf[hasRead:])
+	for v := range PacketHat {
+		b ,err := r.br.ReadByte()
+
 		if err != nil {
 			return false,err
 		}
 
-		hasRead += n
-		if hasRead >= len(buf){
-			break
+		if byte(v) != b {
+			return false,nil
 		}
+
 	}
 
-	//is packHat match {0xde,0xad,0xbe,0xef}?
-	isMatch := bytes.Compare(PacketHat,buf) == 0
-
-	return isMatch,nil
+	return true, nil
 }
 
 //read packetType from io stream
-func (r *PacketReader) readPacketType() (packetType uint32,err error){
-	buf := make([]byte,4)
+func (r *PacketReader) readPacketType() (packetType uint32, err error) {
+	buf := make([]byte, 4)
 
-	hasRead  := int(0)
+	hasRead := int(0)
 	for {
 		n, err := r.br.Read(buf[hasRead:])
 		if err != nil {
-			return 0,err
+			return 0, err
 		}
 
 		hasRead += n
-		if hasRead >= len(buf){
+		if hasRead >= len(buf) {
 			break
 		}
 
@@ -93,48 +86,48 @@ func (r *PacketReader) readPacketType() (packetType uint32,err error){
 
 	packetType = binary.BigEndian.Uint32(buf)
 
-	return packetType,nil
+	return packetType, nil
 }
 
 //read data length
-func (r *PacketReader) readPacketLength() (packetSize uint32,err error){
+func (r *PacketReader) readPacketLength() (packetSize uint32, err error) {
 
-	buf := make([]byte,4)
+	buf := make([]byte, 4)
 
 	//read 4 bytes
-	hasRead  := int(0)
+	hasRead := int(0)
 	for {
-		n,err := r.br.Read(buf[hasRead:])
+		n, err := r.br.Read(buf[hasRead:])
 
 		if err != nil {
-			return 0,err
+			return 0, err
 		}
 
 		hasRead += n
-		if hasRead >= len(buf){
+		if hasRead >= len(buf) {
 			break
 		}
 	}
 
 	//decoding packet size
 	packetSize = binary.BigEndian.Uint32(buf)
-	
+
 	return packetSize, nil
 }
 
-func (r *PacketReader) readPacketData(data []byte)(err error){
+func (r *PacketReader) readPacketData(data []byte) (err error) {
 
 	//read len(data) bytes from io stream
 	hasRead := uint32(0)
 	for {
-		n,err := r.br.Read(data[hasRead:])
+		n, err := r.br.Read(data[hasRead:])
 		if err != nil {
 			return err
 		}
 
 		hasRead += uint32(n)
 
-		if hasRead >= uint32(len(data)){
+		if hasRead >= uint32(len(data)) {
 			break
 		}
 	}
@@ -142,48 +135,48 @@ func (r *PacketReader) readPacketData(data []byte)(err error){
 	return nil
 }
 
-func (r *PacketReader) ReadAPacket()(packet *Packet,err error){
+func (r *PacketReader) ReadAPacket() (packet *Packet, err error) {
 
 	packet = NewPacket()
 
 	//check packet hat
-	hasHat,err := r.checkPacketHat()
+	hasHat, err := r.checkPacketHat()
 
-	if(!hasHat){
-		return nil,ErrInvalidPacketHat
+	if (!hasHat) {
+		return nil, ErrInvalidPacketHat
 	}
 
 	//check packet type
-	packetType,err := r.readPacketType()
+	packetType, err := r.readPacketType()
 
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	packet.SetType(packetType)
 
 	//check packet length
-	packetLength,err := r.readPacketLength()
+	packetLength, err := r.readPacketLength()
 
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	if packetLength > maxPacketLength {
-		return nil,ErrInvalidPacketLength
+		return nil, ErrInvalidPacketLength
 	}
 
 	//alloc packet data buffer
-	packetData := make([]byte,packetLength)
+	packetData := make([]byte, packetLength)
 
 	//read packet data
 	err = r.readPacketData(packetData)
 
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
-	return packet,nil
+	return packet, nil
 }
 
 // Writer implements buffering for an io.Reader object.
@@ -198,33 +191,32 @@ func NewPacketWriter(w io.Writer) *PacketWriter {
 	return wt
 }
 
+func (w *PacketWriter) WriteAPacket(packet *Packet) (err error) {
 
-func (w *PacketWriter)WriteAPacket(packet *Packet)(err error){
-
-	buf := make([]byte,4)
+	buf := make([]byte, 4)
 
 	//write packet hat
-	_,err = w.bw.Write(PacketHat)
+	_, err = w.bw.Write(PacketHat)
 	if err != nil {
 		return err
 	}
 
 	//write packet type
-	binary.BigEndian.PutUint32(buf,packet.GetType())
-	_,err = w.bw.Write(buf)
+	binary.BigEndian.PutUint32(buf, packet.GetType())
+	_, err = w.bw.Write(buf)
 	if err != nil {
 		return err
 	}
 
 	//write packet length
-	binary.BigEndian.PutUint32(buf,uint32(len(packet.GetData())))
-	_,err = w.bw.Write(buf)
+	binary.BigEndian.PutUint32(buf, uint32(len(packet.GetData())))
+	_, err = w.bw.Write(buf)
 	if err != nil {
 		return err
 	}
 
 	//write packet data
-	_,err = w.bw.Write(packet.GetData())
+	_, err = w.bw.Write(packet.GetData())
 	if err != nil {
 		return err
 	}
@@ -232,10 +224,9 @@ func (w *PacketWriter)WriteAPacket(packet *Packet)(err error){
 	return nil
 }
 
-func (w *PacketWriter)Flush() (error) {
+func (w *PacketWriter) Flush() (error) {
 	return w.bw.Flush()
 }
-
 
 // buffered input and output
 
